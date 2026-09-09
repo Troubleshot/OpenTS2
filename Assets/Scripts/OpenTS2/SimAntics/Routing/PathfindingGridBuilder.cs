@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OpenTS2.Content.DBPF;
 
 namespace OpenTS2.SimAntics.Routing
@@ -40,6 +41,17 @@ namespace OpenTS2.SimAntics.Routing
             var grid = new PathfindingGrid(tileWidth, tileHeight);
             ApplyWalls(grid, wallGraph, level);
             return grid;
+        }
+
+        // Marks the given tiles as blocked, e.g. the tiles objects stand on. Which objects
+        // count as obstacles, and multi-tile object footprints, are the caller's concern for
+        // now (object footprint/flag data is not parsed yet); this just blocks what it is given.
+        public static void BlockTiles(PathfindingGrid grid, IEnumerable<GridPosition> tiles)
+        {
+            if (tiles == null)
+                return;
+            foreach (var tile in tiles)
+                grid.SetBlocked(tile.X, tile.Y, true);
         }
 
         private static void ApplyWalls(PathfindingGrid grid, WallGraphAsset wallGraph, int level)

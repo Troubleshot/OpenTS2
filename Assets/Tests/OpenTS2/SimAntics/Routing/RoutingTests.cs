@@ -292,4 +292,23 @@ public class RoutingTests
         Assert.That(grid.Height, Is.EqualTo(8));
         Assert.That(grid.IsWallBetween(1, 0, 1, 1), Is.True);
     }
+
+    [Test]
+    public void BlockTilesMakesThemImpassable()
+    {
+        var grid = Grid(5, 5);
+        var objectTiles = new[]
+        {
+            new GridPosition(2, 0), new GridPosition(2, 1), new GridPosition(2, 2), new GridPosition(2, 3),
+        };
+
+        PathfindingGridBuilder.BlockTiles(grid, objectTiles);
+
+        Assert.That(grid.IsBlocked(2, 1), Is.True);
+
+        var path = AStarPathfinder.FindPath(grid, new GridPosition(0, 0), new GridPosition(4, 0));
+        Assert.That(path, Is.Not.Null);
+        foreach (var tile in path)
+            Assert.That(grid.IsBlocked(tile.X, tile.Y), Is.False, $"path crossed blocked tile {tile}");
+    }
 }
