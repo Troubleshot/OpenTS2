@@ -59,14 +59,11 @@ namespace OpenTS2.SimAntics.Routing
                 {
                     var nx = cx + NeighborX[n];
                     var ny = cy + NeighborY[n];
-                    if (grid.IsBlocked(nx, ny))
+                    // CanMove handles bounds, blocked tiles, walls and diagonal corner rules.
+                    if (!grid.CanMove(cx, cy, nx, ny))
                         continue;
 
                     var diagonal = NeighborX[n] != 0 && NeighborY[n] != 0;
-                    // No corner cutting: a diagonal step requires both shared orthogonal tiles walkable.
-                    if (diagonal && (grid.IsBlocked(cx + NeighborX[n], cy) || grid.IsBlocked(cx, cy + NeighborY[n])))
-                        continue;
-
                     var neighborIndex = ny * width + nx;
                     if (closed[neighborIndex])
                         continue;
