@@ -4,9 +4,8 @@ using System.Collections.Generic;
 namespace OpenTS2.SimAntics.Routing
 {
     // A* pathfinding over a PathfindingGrid. Sims move on an 8-connected grid, so diagonal
-    // steps are allowed but never cut a corner (a diagonal is only taken when both adjacent
-    // orthogonal tiles are also walkable). Costs and heuristic use octile distance, which is
-    // admissible for 8-connected movement.
+    // steps are allowed but never cut a corner (see PathfindingGrid.CanMove). Costs and
+    // heuristic use octile distance, which is admissible for 8-connected movement.
     public static class AStarPathfinder
     {
         private const float Straight = 1f;
@@ -20,13 +19,33 @@ namespace OpenTS2.SimAntics.Routing
         public static List<GridPosition> FindPath(PathfindingGrid grid, GridPosition start, GridPosition goal,
             bool allowDiagonal = true)
         {
-            if (grid.IsBlocked(start.X, start.Y) || grid.IsBlocked(goal.X, goal.Y))
+            return FindPathToAny(grid, start, new[] { goal }, allowDiagonal);
+        }
+
+        // Returns the shortest path from start to the nearest of the given goal tiles, or null
+        // if none is reachable. Blocked goals are ignored. Used when several destinations are
+        // equally acceptable (e.g. any walkable tile beside an object).
+        public static List<GridPosition> FindPathToAny(PathfindingGrid grid, GridPosition start,
+            IReadOnlyList<GridPosition> goals, bool allowDiagonal = true)
+        {
+            if (grid.IsBlocked(start.X, start.Y) || goals == null || goals.Count == 0)
                 return null;
 
             var width = grid.Width;
             var count = width * grid.Height;
-            var goalIndex = goal.Y * width + goal.X;
             var startIndex = start.Y * width + start.X;
+
+            var goalSet = new HashSet<int>();
+            var goalList = new List<GridPosition>();
+            foreach (var goal in goals)
+            {
+                if (grid.IsBlocked(goal.X, goal.Y))
+                    continue;
+                if (goalSet.Add(goal.Y * width + goal.X))
+                    goalList.Add(goal);
+            }
+            if (goalList.Count == 0)
+                return null;
 
             var gScore = new float[count];
             var cameFrom = new int[count];
@@ -39,14 +58,14 @@ namespace OpenTS2.SimAntics.Routing
 
             var open = new MinHeap(count);
             gScore[startIndex] = 0f;
-            open.Push(startIndex, Heuristic(start, goal));
+            open.Push(startIndex, Heuristic(start, goalList));
 
             var neighborLimit = allowDiagonal ? 8 : 4;
 
             while (open.Count > 0)
             {
                 var current = open.Pop();
-                if (current == goalIndex)
+                if (goalSet.Contains(current))
                     return Reconstruct(cameFrom, current, width);
                 if (closed[current])
                     continue;
@@ -74,14 +93,49 @@ namespace OpenTS2.SimAntics.Routing
 
                     gScore[neighborIndex] = tentative;
                     cameFrom[neighborIndex] = current;
-                    open.Push(neighborIndex, tentative + Heuristic(new GridPosition(nx, ny), goal));
+                    open.Push(neighborIndex, tentative + Heuristic(new GridPosition(nx, ny), goalList));
                 }
             }
 
             return null;
         }
 
-        private static float Heuristic(GridPosition a, GridPosition b)
+        // Returns the shortest path to the cheapest walkable tile adjacent to target that the
+        // sim can actually step onto from (i.e. with no wall between it and the target). Sims
+        // stand next to objects rather than on them, so this is what interaction routing needs.
+        // Returns null if no such tile is reachable. If start is already adjacent, the path is
+        // just the start tile.
+        public static List<GridPosition> FindPathAdjacentTo(PathfindingGrid grid, GridPosition start,
+            GridPosition target, bool allowDiagonal = true)
+        {
+            var goals = new List<GridPosition>(8);
+            for (var n = 0; n < 8; n++)
+            {
+                var gx = target.X + NeighborX[n];
+                var gy = target.Y + NeighborY[n];
+                if (grid.IsBlocked(gx, gy))
+                    continue;
+                // The standing tile must border the target without a wall between them.
+                if (!grid.CanMove(gx, gy, target.X, target.Y))
+                    continue;
+                goals.Add(new GridPosition(gx, gy));
+            }
+            return FindPathToAny(grid, start, goals, allowDiagonal);
+        }
+
+        private static float Heuristic(GridPosition a, IReadOnlyList<GridPosition> goals)
+        {
+            var best = float.PositiveInfinity;
+            for (var i = 0; i < goals.Count; i++)
+            {
+                var h = Octile(a, goals[i]);
+                if (h < best)
+                    best = h;
+            }
+            return best;
+        }
+
+        private static float Octile(GridPosition a, GridPosition b)
         {
             var dx = a.X > b.X ? a.X - b.X : b.X - a.X;
             var dy = a.Y > b.Y ? a.Y - b.Y : b.Y - a.Y;

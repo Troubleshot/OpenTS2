@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using OpenTS2.Content.DBPF;
 using OpenTS2.SimAntics.Routing;
@@ -190,5 +191,62 @@ public class RoutingTests
         Assert.That(grid.IsWallBetween(0, 0, 1, 0), Is.False);
         // The level-1 wall (corners (5,5)-(6,5), tiles (5,4)-(5,5)) must not appear at level 0.
         Assert.That(grid.IsWallBetween(5, 4, 5, 5), Is.False);
+    }
+
+    [Test]
+    public void AdjacentRoutingStopsBesideTarget()
+    {
+        var target = new GridPosition(2, 2);
+        var path = AStarPathfinder.FindPathAdjacentTo(Grid(5, 5), new GridPosition(0, 0), target);
+
+        Assert.That(path, Is.Not.Null);
+        var end = path[path.Count - 1];
+        Assert.That(end, Is.Not.EqualTo(target));
+        Assert.That(Math.Abs(end.X - target.X) <= 1 && Math.Abs(end.Y - target.Y) <= 1, Is.True);
+    }
+
+    [Test]
+    public void AdjacentRoutingWhenAlreadyBesideTargetIsSingleTile()
+    {
+        var path = AStarPathfinder.FindPathAdjacentTo(Grid(5, 5), new GridPosition(1, 2), new GridPosition(2, 2));
+
+        Assert.That(path, Is.Not.Null);
+        Assert.That(path.Count, Is.EqualTo(1));
+        Assert.That(path[0], Is.EqualTo(new GridPosition(1, 2)));
+    }
+
+    [Test]
+    public void FullyWalledTargetHasNoAdjacentSlot()
+    {
+        var grid = Grid(5, 5);
+        var target = new GridPosition(2, 2);
+        grid.SetWallBetween(2, 2, 3, 2);
+        grid.SetWallBetween(2, 2, 1, 2);
+        grid.SetWallBetween(2, 2, 2, 3);
+        grid.SetWallBetween(2, 2, 2, 1);
+
+        Assert.That(AStarPathfinder.FindPathAdjacentTo(grid, new GridPosition(0, 0), target), Is.Null);
+    }
+
+    [Test]
+    public void MultiGoalReachesNearestGoal()
+    {
+        var goals = new List<GridPosition> { new GridPosition(0, 4), new GridPosition(4, 0) };
+
+        var path = AStarPathfinder.FindPathToAny(Grid(5, 5), new GridPosition(0, 0), goals);
+
+        Assert.That(path, Is.Not.Null);
+        Assert.That(goals.Contains(path[path.Count - 1]), Is.True);
+    }
+
+    [Test]
+    public void MultiGoalAllBlockedIsNull()
+    {
+        var grid = Grid(5, 5);
+        grid.SetBlocked(0, 4, true);
+        grid.SetBlocked(4, 0, true);
+        var goals = new List<GridPosition> { new GridPosition(0, 4), new GridPosition(4, 0) };
+
+        Assert.That(AStarPathfinder.FindPathToAny(grid, new GridPosition(0, 0), goals), Is.Null);
     }
 }
