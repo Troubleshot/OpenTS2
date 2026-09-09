@@ -60,7 +60,7 @@ namespace OpenTS2.Files.Utils
         public short ReadInt16() { return short.Parse(ReadNum()); }
         public int ReadInt32() { return int.Parse(ReadNum()); }
         public uint ReadUInt32() { return uint.Parse(ReadNum()); }
-        public float ReadFloat() { return float.Parse(ReadNum()); }
+        public float ReadFloat() { return float.Parse(ReadNum(), System.Globalization.CultureInfo.InvariantCulture); }
         public string ReadPascalString() { return Reader.ReadLine(); }
         public string ReadLongPascalString() { return Reader.ReadLine(); }
 

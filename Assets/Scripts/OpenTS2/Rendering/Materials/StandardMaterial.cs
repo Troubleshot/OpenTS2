@@ -176,13 +176,13 @@ namespace OpenTS2.Rendering.Materials
                         material.mainTexture = texture.GetSelectedImageAsUnityTexture();
                         break;
                     case "stdMatAlphaMultiplier":
-                        alphaMul = float.Parse(property.Value);
+                        alphaMul = float.Parse(property.Value, System.Globalization.CultureInfo.InvariantCulture);
                         break;
                     case "stdMatUntexturedDiffAlpha":
-                        untexturedAlpha = float.Parse(property.Value);
+                        untexturedAlpha = float.Parse(property.Value, System.Globalization.CultureInfo.InvariantCulture);
                         break;
                     case "stdMatDiffCoef":
-                        var coefficients = property.Value.Split(',').Select(float.Parse).ToArray();
+                        var coefficients = property.Value.Split(',').Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
                         material.SetColor(DiffuseCoefficient, new Color(coefficients[0], coefficients[1], coefficients[2]));
                         break;
                 }

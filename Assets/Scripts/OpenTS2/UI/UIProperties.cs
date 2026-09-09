@@ -131,7 +131,7 @@ namespace OpenTS2.UI
             var split = value.Split(',');
             foreach (var element in split)
             {
-                list.Add(float.Parse(element));
+                list.Add(float.Parse(element, System.Globalization.CultureInfo.InvariantCulture));
             }
             return list;
         }

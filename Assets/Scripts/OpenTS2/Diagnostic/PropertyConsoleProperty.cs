@@ -44,7 +44,7 @@ namespace OpenTS2.Diagnostic
             }
             if (_property.PropertyType == typeof(float))
             {
-                _property.SetValue(null, float.Parse(value));
+                _property.SetValue(null, float.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
                 return;
             }
             _property.SetValue(null, value);

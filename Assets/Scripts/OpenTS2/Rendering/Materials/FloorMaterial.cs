@@ -17,8 +17,8 @@ namespace OpenTS2.Rendering.Materials
             // Includes floorMaterialScaleU and floorMaterialScaleV, currently included in the StandardMaterial.
             var material = base.Parse(definition);
 
-            float u = float.Parse(definition.GetProperty("floorMaterialScaleU", defaultValue: "1.0"));
-            float v = float.Parse(definition.GetProperty("floorMaterialScaleV", defaultValue: "1.0"));
+            float u = float.Parse(definition.GetProperty("floorMaterialScaleU", defaultValue: "1.0"), System.Globalization.CultureInfo.InvariantCulture);
+            float v = float.Parse(definition.GetProperty("floorMaterialScaleV", defaultValue: "1.0"), System.Globalization.CultureInfo.InvariantCulture);
 
             material.SetVector(UVScale, new Vector4(1 / u, 1 / v, 0, 0));
 

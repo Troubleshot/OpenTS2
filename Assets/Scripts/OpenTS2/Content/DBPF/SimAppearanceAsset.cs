@@ -19,7 +19,7 @@ namespace OpenTS2.Content.DBPF
         /// <summary>
         /// How much the skeleton is stretched by.
         /// </summary>
-        public float Stretch => float.Parse(_properties.GetProperty<StringProp>("stretch").Value);
+        public float Stretch => float.Parse(_properties.GetProperty<StringProp>("stretch").Value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Gender flag - matched against SkinEntryAsset's own Gender when picking a body skin

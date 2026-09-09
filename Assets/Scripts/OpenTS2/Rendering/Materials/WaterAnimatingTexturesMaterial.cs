@@ -24,7 +24,7 @@ namespace OpenTS2.Rendering.Materials
 
             var waterSpeed = definition.GetProperty("waterSpeed");
             material.SetFloat(WaterSpeed,
-                waterSpeed == null ? DefaultWaterSpeed : float.Parse(waterSpeed));
+                waterSpeed == null ? DefaultWaterSpeed : float.Parse(waterSpeed, System.Globalization.CultureInfo.InvariantCulture));
 
             // "textureAddressing tile tile tile" - the animation scales the texture coordinates
             // past 1, so the texture has to repeat rather than clamp at the edge.
