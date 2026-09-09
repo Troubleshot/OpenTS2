@@ -249,4 +249,47 @@ public class RoutingTests
 
         Assert.That(AStarPathfinder.FindPathToAny(grid, new GridPosition(0, 0), goals), Is.Null);
     }
+
+    [Test]
+    public void WorldToTileMatchesLotData()
+    {
+        // Values observed on a loaded lot: objects sit at tile centres (x.5, y.5).
+        Assert.That(LotTileCoordinates.WorldToTile(4.5f, 48.5f), Is.EqualTo(new GridPosition(4, 48)));
+        Assert.That(LotTileCoordinates.WorldToTile(27.5f, 29.5f), Is.EqualTo(new GridPosition(27, 29)));
+        Assert.That(LotTileCoordinates.WorldToTile(0f, 0f), Is.EqualTo(new GridPosition(0, 0)));
+        Assert.That(LotTileCoordinates.WorldToTile(0.999f, 1.0f), Is.EqualTo(new GridPosition(0, 1)));
+        Assert.That(LotTileCoordinates.WorldToTile(-0.5f, -0.5f), Is.EqualTo(new GridPosition(-1, -1)));
+    }
+
+    [Test]
+    public void TileCenterRoundTrips()
+    {
+        var tile = new GridPosition(12, 7);
+        LotTileCoordinates.TileCenterToWorld(tile, out var wx, out var wy);
+
+        Assert.That(wx, Is.EqualTo(12.5f));
+        Assert.That(wy, Is.EqualTo(7.5f));
+        Assert.That(LotTileCoordinates.WorldToTile(wx, wy), Is.EqualTo(tile));
+    }
+
+    [Test]
+    public void BuildsGridWithExplicitSize()
+    {
+        var positions = new[]
+        {
+            new WallGraphPositionEntry { Id = 0, XPos = 1, YPos = 1, Level = 0 },
+            new WallGraphPositionEntry { Id = 1, XPos = 2, YPos = 1, Level = 0 },
+        };
+        var lines = new[]
+        {
+            new WallGraphLineEntry { LayerId = 0, FromId = 0, ToId = 1, Room1 = 1, Room2 = 2 },
+        };
+        var wallGraph = new WallGraphAsset(10, 10, 1, 0, positions, new int[0], lines);
+
+        var grid = PathfindingGridBuilder.FromWallGraph(wallGraph, level: 0, tileWidth: 8, tileHeight: 8);
+
+        Assert.That(grid.Width, Is.EqualTo(8));
+        Assert.That(grid.Height, Is.EqualTo(8));
+        Assert.That(grid.IsWallBetween(1, 0, 1, 1), Is.True);
+    }
 }
