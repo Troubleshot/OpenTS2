@@ -100,23 +100,25 @@ namespace OpenTS2.SimAntics.Routing
             return null;
         }
 
-        // Returns the shortest path to the cheapest walkable tile adjacent to target that the
-        // sim can actually step onto from (i.e. with no wall between it and the target). Sims
-        // stand next to objects rather than on them, so this is what interaction routing needs.
-        // Returns null if no such tile is reachable. If start is already adjacent, the path is
-        // just the start tile.
+        // Returns the shortest path to the cheapest walkable tile from which a sim can use an
+        // object on the target tile. Sims stand next to objects rather than on them, so the
+        // target tile itself is expected to be blocked; valid standing tiles are the walkable
+        // orthogonal neighbours with no wall between them and the target. Returns null if none
+        // is reachable; if start is already such a tile, the path is just the start tile.
+        // (Diagonal standing slots are not offered yet.)
         public static List<GridPosition> FindPathAdjacentTo(PathfindingGrid grid, GridPosition start,
             GridPosition target, bool allowDiagonal = true)
         {
-            var goals = new List<GridPosition>(8);
-            for (var n = 0; n < 8; n++)
+            var goals = new List<GridPosition>(4);
+            for (var n = 0; n < 4; n++) // orthogonal neighbours only
             {
                 var gx = target.X + NeighborX[n];
                 var gy = target.Y + NeighborY[n];
                 if (grid.IsBlocked(gx, gy))
                     continue;
-                // The standing tile must border the target without a wall between them.
-                if (!grid.CanMove(gx, gy, target.X, target.Y))
+                // No wall between the standing tile and the object. Checked via IsWallBetween
+                // rather than CanMove, because the target tile is itself blocked (the object).
+                if (grid.IsWallBetween(gx, gy, target.X, target.Y))
                     continue;
                 goals.Add(new GridPosition(gx, gy));
             }

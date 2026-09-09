@@ -229,6 +229,24 @@ public class RoutingTests
     }
 
     [Test]
+    public void RoutesToStandBesideABlockedObjectTile()
+    {
+        // Objects block the tile they stand on, so the routing target is itself blocked.
+        // The sim must still route to a walkable tile orthogonally beside it.
+        var grid = Grid(5, 5);
+        var target = new GridPosition(2, 2);
+        grid.SetBlocked(target.X, target.Y, true);
+
+        var path = AStarPathfinder.FindPathAdjacentTo(grid, new GridPosition(0, 0), target);
+
+        Assert.That(path, Is.Not.Null);
+        var end = path[path.Count - 1];
+        Assert.That(Math.Abs(end.X - target.X) + Math.Abs(end.Y - target.Y), Is.EqualTo(1),
+            "standing tile must be orthogonally adjacent to the object");
+        Assert.That(grid.IsBlocked(end.X, end.Y), Is.False);
+    }
+
+    [Test]
     public void MultiGoalReachesNearestGoal()
     {
         var goals = new List<GridPosition> { new GridPosition(0, 4), new GridPosition(4, 0) };
