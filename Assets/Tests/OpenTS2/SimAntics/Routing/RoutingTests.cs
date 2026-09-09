@@ -329,4 +329,63 @@ public class RoutingTests
         foreach (var tile in path)
             Assert.That(grid.IsBlocked(tile.X, tile.Y), Is.False, $"path crossed blocked tile {tile}");
     }
+
+    [Test]
+    public void TraversalStartsAtFirstTileCentre()
+    {
+        var traversal = new RouteTraversal(new List<GridPosition> { new GridPosition(0, 0), new GridPosition(3, 0) });
+
+        Assert.That(traversal.WorldX, Is.EqualTo(0.5f));
+        Assert.That(traversal.WorldY, Is.EqualTo(0.5f));
+        Assert.That(traversal.IsComplete, Is.False);
+    }
+
+    [Test]
+    public void TraversalAdvancesAlongPathAndCompletes()
+    {
+        var path = new List<GridPosition>
+        {
+            new GridPosition(0, 0), new GridPosition(1, 0), new GridPosition(2, 0), new GridPosition(3, 0),
+        };
+        var traversal = new RouteTraversal(path);
+
+        traversal.Advance(1.5f);
+        Assert.That(traversal.WorldX, Is.EqualTo(2.0f).Within(1e-4f));
+        Assert.That(traversal.WorldY, Is.EqualTo(0.5f).Within(1e-4f));
+        Assert.That(traversal.HeadingX, Is.EqualTo(1f).Within(1e-4f));
+        Assert.That(traversal.IsComplete, Is.False);
+
+        traversal.Advance(100f);
+        Assert.That(traversal.IsComplete, Is.True);
+        Assert.That(traversal.WorldX, Is.EqualTo(3.5f).Within(1e-4f));
+    }
+
+    [Test]
+    public void TraversalIncrementalMatchesSingleAdvance()
+    {
+        var path = new List<GridPosition>
+        {
+            new GridPosition(0, 0), new GridPosition(1, 0), new GridPosition(2, 0), new GridPosition(3, 0),
+        };
+
+        var incremental = new RouteTraversal(path);
+        incremental.Advance(0.5f);
+        incremental.Advance(0.5f);
+        var single = new RouteTraversal(path);
+        single.Advance(1.0f);
+
+        Assert.That(incremental.WorldX, Is.EqualTo(single.WorldX).Within(1e-4f));
+        Assert.That(incremental.WorldY, Is.EqualTo(single.WorldY).Within(1e-4f));
+    }
+
+    [Test]
+    public void TraversalSingleAndEmptyPathsAreComplete()
+    {
+        var single = new RouteTraversal(new List<GridPosition> { new GridPosition(2, 2) });
+        Assert.That(single.IsComplete, Is.True);
+        Assert.That(single.WorldX, Is.EqualTo(2.5f));
+        Assert.That(single.WorldY, Is.EqualTo(2.5f));
+
+        Assert.That(new RouteTraversal(new List<GridPosition>()).IsComplete, Is.True);
+    }
 }
