@@ -99,4 +99,52 @@ public class SimAnticsTest
 
         Assert.IsInstanceOf<SimAnticsException>(exception);
     }
+
+    [Test]
+    public void TestPrimitivesRegistered()
+    {
+        Assert.That(VMPrimitiveRegistry.GetPrimitive(0xF), Is.TypeOf(typeof(VMBreakPoint)));
+        Assert.That(VMPrimitiveRegistry.GetPrimitive(0x20), Is.TypeOf(typeof(VMTestObjectType)));
+    }
+
+    [Test]
+    public void TestObjectTypePrimitive()
+    {
+        const uint testGUID = 0x4C29CE24;
+
+        var vm = new VM();
+
+        var myDefinition = new ObjectDefinitionAsset();
+        myDefinition.TGI = new ResourceKey(1, _groupID, TypeIDs.OBJD);
+        var myEntity = new VMEntity(myDefinition);
+        vm.AddEntity(myEntity);
+
+        var stackDefinition = new ObjectDefinitionAsset();
+        stackDefinition.TGI = new ResourceKey(2, _groupID, TypeIDs.OBJD);
+        stackDefinition.GUID = testGUID;
+        var stackEntity = new VMEntity(stackDefinition);
+        vm.AddEntity(stackEntity);
+
+        var bhav = VM.GetBHAV(0x1001, _groupID);
+        var stackFrame = new VMStackFrame(bhav, myEntity.MainThread);
+        stackFrame.StackObjectID = stackEntity.ID;
+
+        // Operands: GUID 0x4C29CE24, data value 0, source 0x0A (StackObjectID), flag 0x02 (store GUID in temps).
+        var node = new BHAVAsset.Node
+        {
+            OpCode = 0x20,
+            Operands = new byte[] { 0x24, 0xCE, 0x29, 0x4C, 0x00, 0x00, 0x0A, 0x02, 0, 0, 0, 0, 0, 0, 0, 0 }
+        };
+
+        var primitive = new VMTestObjectType();
+
+        var matchResult = primitive.Execute(new VMContext { StackFrame = stackFrame, Node = node });
+        Assert.That(matchResult.Code, Is.EqualTo(VMExitCode.True));
+        Assert.That((ushort)myEntity.Temps[0], Is.EqualTo(testGUID & 0xFFFF));
+        Assert.That((ushort)myEntity.Temps[1], Is.EqualTo(testGUID >> 16));
+
+        node.Operands[0] = 0x00; // break the GUID match
+        var missResult = primitive.Execute(new VMContext { StackFrame = stackFrame, Node = node });
+        Assert.That(missResult.Code, Is.EqualTo(VMExitCode.False));
+    }
 }

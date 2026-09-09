@@ -16,7 +16,9 @@ namespace OpenTS2.SimAntics.Primitives
             RegisterPrimitive<VMGenericSimCall>(0x1);
             RegisterPrimitive<VMExpression>(0x2);
             RegisterPrimitive<VMRandomNumber>(0x8);
+            RegisterPrimitive<VMBreakPoint>(0xF);
             RegisterPrimitive<VMRemoveObjectInstance>(0x12);
+            RegisterPrimitive<VMTestObjectType>(0x20);
             RegisterPrimitive<VMNotifyStackObjectOutOfIdle>(0x31);
             RegisterPrimitive<VMLua>(0x7E);
         }
