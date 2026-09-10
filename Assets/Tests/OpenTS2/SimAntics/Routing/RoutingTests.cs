@@ -388,4 +388,25 @@ public class RoutingTests
 
         Assert.That(new RouteTraversal(new List<GridPosition>()).IsComplete, Is.True);
     }
+
+    [Test]
+    public void SlotPlacementRotatesOffsetAroundObject()
+    {
+        var obj = new GridPosition(5, 5);
+
+        Assert.That(SlotPlacement.GetSlotTile(obj, 0f, 1f, 0f), Is.EqualTo(new GridPosition(6, 5)));
+        Assert.That(SlotPlacement.GetSlotTile(obj, 90f, 1f, 0f), Is.EqualTo(new GridPosition(5, 6)));
+        Assert.That(SlotPlacement.GetSlotTile(obj, 180f, 1f, 0f), Is.EqualTo(new GridPosition(4, 5)));
+        Assert.That(SlotPlacement.GetSlotTile(obj, 270f, 1f, 0f), Is.EqualTo(new GridPosition(5, 4)));
+        Assert.That(SlotPlacement.GetSlotTile(obj, 123f, 0f, 0f), Is.EqualTo(obj));
+    }
+
+    [Test]
+    public void SlotPlacementWorldPosition()
+    {
+        SlotPlacement.GetSlotWorldPosition(new GridPosition(5, 5), 0f, 1f, 0f, out var worldX, out var worldY);
+
+        Assert.That(worldX, Is.EqualTo(6.5f).Within(1e-4f));
+        Assert.That(worldY, Is.EqualTo(5.5f).Within(1e-4f));
+    }
 }
