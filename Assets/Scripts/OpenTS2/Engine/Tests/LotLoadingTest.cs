@@ -273,7 +273,43 @@ namespace OpenTS2.Engine.Tests
             follower.SetRoute(path, (x, y) => _architecture.GetFloorHeightAt(x, y, 0));
             _lotObject.Add(conversionRoot);
 
+            PlayWalkAnimation(sim);
+
             Debug.Log($"RouteDemo: walking sim from {start} to {chosen} along {path.Count} tiles");
+        }
+
+        private void PlayWalkAnimation(SimCharacterComponent sim)
+        {
+            var content = ContentManager.Instance;
+            var key = new ResourceKey("a-male-walk-alt0-normal_anim", GroupIDs.Scenegraph, TypeIDs.SCENEGRAPH_ANIM);
+
+            var anim = content.GetAsset<ScenegraphAnimationAsset>(key);
+            if (anim == null)
+            {
+                // Sim animations live in the Sims3D packages, which the lot test may not have loaded.
+                content.AddPackages(Filesystem.GetPackagesInDirectory(
+                    Path.Combine(Filesystem.GetPathForProduct(ProductFlags.BaseGame), "TSData/Res/Sims3D")));
+                anim = content.GetAsset<ScenegraphAnimationAsset>(key);
+            }
+            if (anim == null)
+            {
+                Debug.Log("RouteDemo: walk animation not found");
+                return;
+            }
+
+            var animationObj = sim.GetComponentInChildren<Animation>();
+            if (animationObj == null)
+            {
+                Debug.Log("RouteDemo: sim has no Animation component");
+                return;
+            }
+
+            var clip = anim.CreateClipFromResource(sim.Scenegraph.BoneNamesToRelativePaths, sim.Scenegraph.BlendNamesToRelativePaths);
+            clip.legacy = true;
+            clip.wrapMode = WrapMode.Loop;
+            animationObj.AddClip(clip, "walk");
+            sim.AdjustInverseKinematicWeightsForAnimation(anim.AnimResource);
+            animationObj.Play("walk");
         }
     }
 }
