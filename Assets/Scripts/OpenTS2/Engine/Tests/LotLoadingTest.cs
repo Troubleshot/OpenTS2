@@ -267,15 +267,39 @@ namespace OpenTS2.Engine.Tests
             var simObject = sim.gameObject;
             simObject.name = "RouteDemo_sim";
             simObject.transform.SetParent(conversionRoot.transform, false);
-            var follower = simObject.AddComponent<OpenTS2.SimAntics.Routing.RouteFollower>();
-            follower.Speed = 3f;
-            // Track the ground-floor (level 0) height so the sim stays on the floor.
-            follower.SetRoute(path, (x, y) => _architecture.GetFloorHeightAt(x, y, 0));
+            // The VM owns the logical movement (one tile per tick); the renderer reflects it.
+            var vm = new OpenTS2.SimAntics.VM { RoutingGrid = grid };
+            var simDefinition = new ObjectDefinitionAsset { TGI = new ResourceKey(1, 1, TypeIDs.OBJD) };
+            var entity = new OpenTS2.SimAntics.VMEntity(simDefinition);
+            vm.AddEntity(entity);
+            entity.TileX = start.Value.X;
+            entity.TileY = start.Value.Y;
+            var routeHandler = new OpenTS2.SimAntics.VMRouteHandler(entity, chosen);
+
+            var entityRenderer = simObject.AddComponent<OpenTS2.SimAntics.Routing.VMEntityRenderer>();
+            entityRenderer.Entity = entity;
+            entityRenderer.Speed = 3f;
+            entityRenderer.HeightAt = (x, y) => _architecture.GetFloorHeightAt(x, y, 0);
             _lotObject.Add(conversionRoot);
 
             PlayWalkAnimation(sim);
+            StartCoroutine(DriveRoute(routeHandler, entityRenderer));
 
-            Debug.Log($"RouteDemo: walking sim from {start} to {chosen} along {path.Count} tiles");
+            Debug.Log($"RouteDemo: VM walking sim from {start} to {chosen} along {path.Count} tiles");
+        }
+
+        // Advances the route's logical tile once the sim has visibly reached the current tile,
+        // keeping movement smooth and on-path.
+        private System.Collections.IEnumerator DriveRoute(OpenTS2.SimAntics.VMRouteHandler handler,
+            OpenTS2.SimAntics.Routing.VMEntityRenderer entityRenderer)
+        {
+            var code = handler.Tick();
+            while (code == OpenTS2.SimAntics.VMExitCode.Continue)
+            {
+                yield return null;
+                if (entityRenderer.AtTargetTile())
+                    code = handler.Tick();
+            }
         }
 
         private void PlayWalkAnimation(SimCharacterComponent sim)
