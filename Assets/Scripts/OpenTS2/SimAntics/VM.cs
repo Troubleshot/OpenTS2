@@ -1,6 +1,7 @@
 using OpenTS2.Common;
 using OpenTS2.Content;
 using OpenTS2.Files.Formats.DBPF;
+using OpenTS2.SimAntics.Routing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +20,9 @@ namespace OpenTS2.SimAntics
         public List<VMEntity> Entities = new List<VMEntity>();
         public uint CurrentTick = 0;
         public Action<Exception, VMEntity> ExceptionHandler;
+        // Walkability grid for the current lot ground floor, used by routing. Set by the lot
+        // simulation host; null when no lot is loaded.
+        public PathfindingGrid RoutingGrid;
 
         private Dictionary<short, VMEntity> _entitiesByID = new Dictionary<short, VMEntity>();
 

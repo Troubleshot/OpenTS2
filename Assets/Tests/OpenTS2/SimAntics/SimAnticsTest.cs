@@ -9,6 +9,7 @@ using OpenTS2.SimAntics;
 using OpenTS2.Common;
 using OpenTS2.Files.Formats.DBPF;
 using OpenTS2.SimAntics.Primitives;
+using OpenTS2.SimAntics.Routing;
 using OpenTS2.Content.DBPF;
 
 public class SimAnticsTest
@@ -146,5 +147,66 @@ public class SimAnticsTest
         node.Operands[0] = 0x00; // break the GUID match
         var missResult = primitive.Execute(new VMContext { StackFrame = stackFrame, Node = node });
         Assert.That(missResult.Code, Is.EqualTo(VMExitCode.False));
+    }
+
+    private VMEntity AddPositionedEntity(VM vm, int tileX, int tileY)
+    {
+        var definition = new ObjectDefinitionAsset();
+        definition.TGI = new ResourceKey(1, _groupID, TypeIDs.OBJD);
+        var entity = new VMEntity(definition);
+        vm.AddEntity(entity);
+        entity.TileX = tileX;
+        entity.TileY = tileY;
+        return entity;
+    }
+
+    [Test]
+    public void RouteHandlerWalksEntityBesideTarget()
+    {
+        var vm = new VM();
+        vm.RoutingGrid = new PathfindingGrid(5, 5);
+        vm.RoutingGrid.SetBlocked(2, 2, true); // the object's own tile is blocked
+
+        var entity = AddPositionedEntity(vm, 0, 0);
+        var handler = new VMRouteHandler(entity, new GridPosition(2, 2));
+        Assert.That(handler.HasPath, Is.True);
+
+        var code = VMExitCode.Continue;
+        var guard = 0;
+        while (code == VMExitCode.Continue && guard++ < 100)
+            code = handler.Tick();
+
+        Assert.That(code, Is.EqualTo(VMExitCode.True));
+        Assert.That(System.Math.Abs(entity.TileX - 2) + System.Math.Abs(entity.TileY - 2), Is.EqualTo(1),
+            "entity should end orthogonally beside the target");
+    }
+
+    [Test]
+    public void RouteHandlerReturnsFalseWhenUnreachable()
+    {
+        var vm = new VM();
+        vm.RoutingGrid = new PathfindingGrid(5, 5);
+        vm.RoutingGrid.SetBlocked(2, 2, true);
+        vm.RoutingGrid.SetWallBetween(2, 2, 3, 2);
+        vm.RoutingGrid.SetWallBetween(2, 2, 1, 2);
+        vm.RoutingGrid.SetWallBetween(2, 2, 2, 3);
+        vm.RoutingGrid.SetWallBetween(2, 2, 2, 1);
+
+        var entity = AddPositionedEntity(vm, 0, 0);
+        var handler = new VMRouteHandler(entity, new GridPosition(2, 2));
+
+        Assert.That(handler.HasPath, Is.False);
+        Assert.That(handler.Tick(), Is.EqualTo(VMExitCode.False));
+    }
+
+    [Test]
+    public void RouteHandlerReturnsFalseWithNoGrid()
+    {
+        var vm = new VM();
+        var entity = AddPositionedEntity(vm, 0, 0);
+        var handler = new VMRouteHandler(entity, new GridPosition(2, 2));
+
+        Assert.That(handler.HasPath, Is.False);
+        Assert.That(handler.Tick(), Is.EqualTo(VMExitCode.False));
     }
 }

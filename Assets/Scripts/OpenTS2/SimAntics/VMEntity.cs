@@ -27,6 +27,11 @@ namespace OpenTS2.SimAntics
         public short[] Attributes;
         public short[] SemiAttributes;
         public short[] ObjectData = new short[114];
+        // Engine-side tile position on the current lot (routing/rendering), not part of the
+        // SimAntics object-data arrays.
+        public int TileX;
+        public int TileY;
+        public int Level;
         public uint PrivateGroupID => ObjectDefinition.GlobalTGI.GroupID;
         public uint SemiGlobalGroupID
         {
