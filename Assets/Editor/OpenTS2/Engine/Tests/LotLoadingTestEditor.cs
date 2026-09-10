@@ -104,6 +104,8 @@ namespace OpenTS2.Engine.Tests
             int floor = EditorGUILayout.IntSlider(test.Floor, 1, test.MaxFloor + test.BaseFloor);
             test.Floor = floor;
 
+            test.RouteDemo = EditorGUILayout.Toggle("Route Demo", test.RouteDemo);
+
             test.Changed();
         }
     }
