@@ -19,6 +19,7 @@ namespace OpenTS2.SimAntics.Primitives
             RegisterPrimitive<VMBreakPoint>(0xF);
             RegisterPrimitive<VMRemoveObjectInstance>(0x12);
             RegisterPrimitive<VMTestObjectType>(0x20);
+            RegisterPrimitive<VMGoToRoutingSlot>(0x2D);
             RegisterPrimitive<VMNotifyStackObjectOutOfIdle>(0x31);
             RegisterPrimitive<VMLua>(0x7E);
         }

@@ -106,6 +106,7 @@ public class SimAnticsTest
     {
         Assert.That(VMPrimitiveRegistry.GetPrimitive(0xF), Is.TypeOf(typeof(VMBreakPoint)));
         Assert.That(VMPrimitiveRegistry.GetPrimitive(0x20), Is.TypeOf(typeof(VMTestObjectType)));
+        Assert.That(VMPrimitiveRegistry.GetPrimitive(0x2D), Is.TypeOf(typeof(VMGoToRoutingSlot)));
     }
 
     [Test]
@@ -208,5 +209,48 @@ public class SimAnticsTest
 
         Assert.That(handler.HasPath, Is.False);
         Assert.That(handler.Tick(), Is.EqualTo(VMExitCode.False));
+    }
+
+    [Test]
+    public void GoToRoutingSlotRoutesBesideStackObject()
+    {
+        var vm = new VM();
+        vm.RoutingGrid = new PathfindingGrid(5, 5);
+        vm.RoutingGrid.SetBlocked(2, 2, true); // the stack object occupies its tile
+
+        var sim = AddPositionedEntity(vm, 0, 0);
+        var stackObject = AddPositionedEntity(vm, 2, 2);
+
+        var bhav = VM.GetBHAV(0x1001, _groupID);
+        var frame = new VMStackFrame(bhav, sim.MainThread);
+        frame.StackObjectID = stackObject.ID;
+        var node = new BHAVAsset.Node { OpCode = 0x2D, Operands = new byte[16] };
+
+        var result = new VMGoToRoutingSlot().Execute(new VMContext { StackFrame = frame, Node = node });
+        Assert.That(result.Code, Is.EqualTo(VMExitCode.Continue));
+
+        var code = VMExitCode.Continue;
+        var guard = 0;
+        while (code == VMExitCode.Continue && guard++ < 100)
+            code = result.ContinueHandler.Tick();
+
+        Assert.That(code, Is.EqualTo(VMExitCode.True));
+        Assert.That(System.Math.Abs(sim.TileX - 2) + System.Math.Abs(sim.TileY - 2), Is.EqualTo(1),
+            "sim should end orthogonally beside the stack object");
+    }
+
+    [Test]
+    public void GoToRoutingSlotWithNoStackObjectReturnsFalse()
+    {
+        var vm = new VM();
+        vm.RoutingGrid = new PathfindingGrid(5, 5);
+        var sim = AddPositionedEntity(vm, 0, 0);
+
+        var bhav = VM.GetBHAV(0x1001, _groupID);
+        var frame = new VMStackFrame(bhav, sim.MainThread); // StackObjectID defaults to 0 (no entity)
+        var node = new BHAVAsset.Node { OpCode = 0x2D, Operands = new byte[16] };
+
+        var result = new VMGoToRoutingSlot().Execute(new VMContext { StackFrame = frame, Node = node });
+        Assert.That(result.Code, Is.EqualTo(VMExitCode.False));
     }
 }
