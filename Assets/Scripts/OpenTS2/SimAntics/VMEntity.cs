@@ -28,10 +28,12 @@ namespace OpenTS2.SimAntics
         public short[] SemiAttributes;
         public short[] ObjectData = new short[114];
         // Engine-side tile position on the current lot (routing/rendering), not part of the
-        // SimAntics object-data arrays.
+        // SimAntics object-data arrays. FacingDegrees is the object's rotation on the ground
+        // plane (counter-clockwise), used to place its slots.
         public int TileX;
         public int TileY;
         public int Level;
+        public float FacingDegrees;
         public uint PrivateGroupID => ObjectDefinition.GlobalTGI.GroupID;
         public uint SemiGlobalGroupID
         {
