@@ -247,6 +247,15 @@ namespace OpenTS2.Scenes.Lot
             return Mathf.Lerp(Mathf.Lerp(i0, i1, xi), Mathf.Lerp(j0, j1, xi), yi);
         }
 
+        // Floor height at ground-plane position (x, y) for the given level. Level uses the same
+        // numbering as GetLevelAt (relative to BaseFloor); it is converted to the elevation array
+        // index the floor rests on, mirroring GetLevelAt's logic.
+        public float GetFloorHeightAt(float x, float y, int level)
+        {
+            var index = Mathf.Clamp(level - BaseFloor, 0, Elevation.Depth - 1);
+            return GetElevationInterp(Elevation.Data[index], Elevation.Width, Elevation.Height, x, y);
+        }
+
         public int GetLevelAt(Vector3 position)
         {
             for (int i = 0; i < Elevation.Depth; i++)

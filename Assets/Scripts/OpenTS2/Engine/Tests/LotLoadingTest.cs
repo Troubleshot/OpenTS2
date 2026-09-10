@@ -269,7 +269,8 @@ namespace OpenTS2.Engine.Tests
             simObject.transform.SetParent(conversionRoot.transform, false);
             var follower = simObject.AddComponent<OpenTS2.SimAntics.Routing.RouteFollower>();
             follower.Speed = 3f;
-            follower.SetRoute(path, 0f);
+            // Track the ground-floor (level 0) height so the sim stays on the floor.
+            follower.SetRoute(path, (x, y) => _architecture.GetFloorHeightAt(x, y, 0));
             _lotObject.Add(conversionRoot);
 
             Debug.Log($"RouteDemo: walking sim from {start} to {chosen} along {path.Count} tiles");

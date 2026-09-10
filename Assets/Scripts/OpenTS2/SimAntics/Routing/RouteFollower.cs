@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,9 @@ namespace OpenTS2.SimAntics.Routing
 
         private RouteTraversal _traversal;
         private float _height;
+        // Optional per-position ground height (worldX, worldY) -> height; overrides the fixed
+        // height when set, so the sim follows the floor across slopes and levels.
+        private Func<float, float, float> _heightAt;
 
         public bool HasRoute => _traversal != null;
         public bool IsComplete => _traversal == null || _traversal.IsComplete;
@@ -22,6 +26,14 @@ namespace OpenTS2.SimAntics.Routing
         {
             _traversal = new RouteTraversal(path);
             _height = height;
+            _heightAt = null;
+            ApplyToTransform();
+        }
+
+        public void SetRoute(IReadOnlyList<GridPosition> path, Func<float, float, float> heightAt)
+        {
+            _traversal = new RouteTraversal(path);
+            _heightAt = heightAt;
             ApplyToTransform();
         }
 
@@ -38,7 +50,8 @@ namespace OpenTS2.SimAntics.Routing
             if (_traversal == null)
                 return;
 
-            transform.localPosition = new Vector3(_traversal.WorldX, _traversal.WorldY, _height);
+            var height = _heightAt != null ? _heightAt(_traversal.WorldX, _traversal.WorldY) : _height;
+            transform.localPosition = new Vector3(_traversal.WorldX, _traversal.WorldY, height);
 
             if (Mathf.Abs(_traversal.HeadingX) > 1e-4f || Mathf.Abs(_traversal.HeadingY) > 1e-4f)
             {
