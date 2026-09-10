@@ -22,6 +22,10 @@ namespace OpenTS2.Engine.Tests
         public int Floor = 5;
         public WallsMode Mode = WallsMode.Roof;
 
+        // When enabled, spawns a base sim on the ground floor and walks it to a nearby object
+        // along a routed path - a visual check of the routing subsystem.
+        public bool RouteDemo = false;
+
         public int BaseFloor => _architecture?.BaseFloor ?? 0;
         public int MaxFloor => _architecture?.FloorPatterns.Depth ?? 1;
 
@@ -195,6 +199,80 @@ namespace OpenTS2.Engine.Tests
             Mode = WallsMode.Roof;
             _state = new WorldState(Floor, Mode);
             _architecture.UpdateState(_state);
+
+            if (RouteDemo)
+                RunRouteDemo();
+        }
+
+        // Walks a base sim along a routed path on the ground floor as a visual routing check.
+        private void RunRouteDemo()
+        {
+            var elevation = _architecture.Elevation;
+            var tilesW = elevation.Width - 1;
+            var tilesH = elevation.Height - 1;
+
+            var grid = new OpenTS2.SimAntics.Routing.PathfindingGrid(tilesW, tilesH);
+            var objectTiles = new List<OpenTS2.SimAntics.Routing.GridPosition>();
+            foreach (var obj in _testObjects)
+            {
+                var lp = obj.transform.GetChild(0).localPosition;
+                if (lp == Vector3.zero || _architecture.GetLevelAt(lp) != 0)
+                    continue;
+                objectTiles.Add(OpenTS2.SimAntics.Routing.LotTileCoordinates.WorldToTile(lp.x, lp.y));
+            }
+            OpenTS2.SimAntics.Routing.PathfindingGridBuilder.BlockTiles(grid, objectTiles);
+
+            OpenTS2.SimAntics.Routing.GridPosition? start = null;
+            for (var y = 0; y < tilesH && start == null; y++)
+                for (var x = 0; x < tilesW; x++)
+                    if (!grid.IsBlocked(x, y))
+                    {
+                        start = new OpenTS2.SimAntics.Routing.GridPosition(x, y);
+                        break;
+                    }
+
+            if (start == null)
+            {
+                Debug.Log("RouteDemo: no walkable start tile");
+                return;
+            }
+
+            List<OpenTS2.SimAntics.Routing.GridPosition> path = null;
+            var chosen = default(OpenTS2.SimAntics.Routing.GridPosition);
+            foreach (var tile in objectTiles)
+            {
+                var candidate = OpenTS2.SimAntics.Routing.AStarPathfinder.FindPathAdjacentTo(grid, start.Value, tile);
+                if (candidate != null && candidate.Count > 5)
+                {
+                    path = candidate;
+                    chosen = tile;
+                    break;
+                }
+            }
+
+            if (path == null)
+            {
+                Debug.Log("RouteDemo: no route to any object found");
+                return;
+            }
+
+            // The lot converts data space (Z-up) to world (Y-up) via a rotation carried on each
+            // object's root, with the data position on its child. Reuse that same rotation so the
+            // follower can work in data space.
+            var sample = _testObjects[0];
+            var conversionRoot = new GameObject("RouteDemo_root");
+            conversionRoot.transform.SetPositionAndRotation(sample.transform.position, sample.transform.rotation);
+
+            var sim = SimCharacterComponent.CreateNakedBaseSim();
+            var simObject = sim.gameObject;
+            simObject.name = "RouteDemo_sim";
+            simObject.transform.SetParent(conversionRoot.transform, false);
+            var follower = simObject.AddComponent<OpenTS2.SimAntics.Routing.RouteFollower>();
+            follower.Speed = 3f;
+            follower.SetRoute(path, 0f);
+            _lotObject.Add(conversionRoot);
+
+            Debug.Log($"RouteDemo: walking sim from {start} to {chosen} along {path.Count} tiles");
         }
     }
 }
