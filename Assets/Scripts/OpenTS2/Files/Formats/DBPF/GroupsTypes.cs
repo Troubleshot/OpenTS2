@@ -45,6 +45,7 @@ namespace OpenTS2.Files.Formats.DBPF
         public const uint LOT_WALLLAYER = 0x8A84D7B0;
         public const uint LOT_STRINGMAP = 0xCAC4FC40;
         public const uint LOT_3ARY = 0x2A51171B;
+        public const uint SLOT = 0x534C4F54;
         public const uint CATALOG_OBJECT = 0xCCA8E925;
         public const uint CATALOG_FENCE = 0x2CB230B8;
         public const uint CATALOG_ROOF = 0xACA8EA06;
